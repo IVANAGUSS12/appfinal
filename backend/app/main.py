@@ -1,20 +1,41 @@
+# backend/app/main.py
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-import os
-from .db import init_db
-from .routes import auth, ref, patients
+from fastapi.middleware.cors import CORSMiddleware
+from app.routes import patients, ref
 
-os.makedirs("uploads", exist_ok=True)
-os.makedirs("frontend", exist_ok=True)
+# --------------------------
+# Inicialización principal
+# --------------------------
+app = FastAPI(
+    title="CEMIC · Backend",
+    description="API interna para panel, QR e importaciones",
+    version="2.0.0"
+)
 
-init_db()
-app = FastAPI(title="CEMIC Autorizaciones")
+# --------------------------
+# Configuración de CORS
+# --------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # podés restringir luego a tus dominios
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Routers ya tienen prefix por dentro → no repetir
-app.include_router(auth.router)
-app.include_router(ref.router)
+# --------------------------
+# Rutas principales
+# --------------------------
 app.include_router(patients.router)
+app.include_router(ref.router)
 
-# Static al final
-app.mount("/files", StaticFiles(directory="uploads"), name="files")
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+# --------------------------
+# Ruta raíz (ping test)
+# --------------------------
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "API CEMIC corriendo correctamente",
+        "routes": ["/api/patients", "/api/ref"]
+    }
