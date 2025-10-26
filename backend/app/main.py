@@ -2,21 +2,24 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import os
 
-# asegurar carpetas al arrancar
+from .db import init_db
+from .routes import auth, ref, patients  # ✅ Importa las rutas
+
+# Crear carpetas necesarias
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("frontend", exist_ok=True)
 
-from .db import init_db
-from .routes import auth, ref, patients
-
+# Inicializar DB
 init_db()
 
-app = FastAPI(title="Autorizaciones")
+# Crear app principal
+app = FastAPI(title="CEMIC Autorizaciones")
 
-# ahora montamos rutas internas en /app
+# ✅ Incluir rutas de API
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(ref.router, prefix="/api/ref", tags=["ref"])
+app.include_router(patients.router, prefix="/api/patients", tags=["patients"])
+
+# ✅ Montar los archivos estáticos del frontend
 app.mount("/files", StaticFiles(directory="uploads"), name="files")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
-
-app.include_router(auth.router)
-app.include_router(ref.router)
-app.include_router(patients.router)
