@@ -1,168 +1,67 @@
-# backend/app/routes/ref.py  (REEMPLAZO COMPLETO)
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from sqlalchemy.orm import Session
-from ..db import get_db
-from ..models import ref as models  # Asegurate que estén estos modelos
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Importar listas desde reporte</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;background:#f3f7f5;color:#0e2720;margin:0}
+    .card{max-width:720px;margin:40px auto;background:#fff;border:1px solid #e6efea;border-radius:16px;padding:20px;box-shadow:0 12px 34px rgba(6,68,39,.08)}
+    h1{font-size:28px;margin:0 0 16px}
+    .row{margin:14px 0}
+    button{background:#064427;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700;margin-right:8px;cursor:pointer}
+    a.btn{display:inline-block;text-decoration:none;background:#064427;color:#fff;border-radius:10px;padding:8px 12px}
+    .muted{color:#5c6e68}
+    #out{white-space:pre-wrap;font-family:ui-monospace,Consolas,Monaco,monospace;background:#f6faf8;border:1px dashed #cfe2da;border-radius:10px;padding:10px;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Importar listas desde reporte</h1>
+    <div class="muted">Acepta <b>CSV</b> con columnas <code>cirujano,especialidad,obra_social</code>, <b>XLS-HTML</b> o <b>XLS/XLSX</b>.</div>
 
-router = APIRouter(prefix="/api/ref", tags=["ref"])
+    <div class="row">
+      <label>Archivo</label><br>
+      <input type="file" id="file" />
+    </div>
 
-# -------- Helpers --------
-def _norm(s: str) -> str:
-    s = (s or "").strip()
-    return s if s and s.lower() not in ("nan", "none", "null") else ""
+    <div class="row">
+      <button id="btnCsv">Importar CSV</button>
+      <button id="btnHtml">Importar XLS-HTML</button>
+      <button id="btnXls">Importar XLS/XLSX</button>
+      <a class="btn" href="/menu.html">Ir al Menú</a>
+    </div>
 
-def _upsert_text_set(db: Session, Model, field: str, values: set[str]) -> int:
-    """Inserta si no existe. Devuelve cantidad inserted."""
-    if not values: return 0
-    # Traer existentes
-    existing = {getattr(r, field) for r in db.query(Model).all()}
-    inserted = 0
-    for v in values:
-        if not v or v in existing: 
-            continue
-        db.add(Model(**{field: v}))
-        inserted += 1
-    db.commit()
-    return inserted
+    <div id="out" class="muted">{resultado acá}</div>
+  </div>
 
-# -------- API --------
-@router.get("/lists")
-def lists(db: Session = Depends(get_db)):
-    """
-    Devuelve las listas para QR/menú.
-    Estructura:
-    {
-      "medicos": ["A", "B", ...],
-      "coberturas": ["OSDE", "Swiss", ...],
-      "sectores": [{"codigo":"TRAUMA","nombre":"Traumatología"}, ...]  // o strings si tu modelo no tiene codigo
+  <script>
+    const $ = (q)=>document.querySelector(q);
+    async function postFile(url, file){
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch(url, { method:'POST', body: fd });
+      const j = await r.json().catch(()=>({detail:'Respuesta inválida'}));
+      if(!r.ok){ throw new Error(j.detail||('HTTP '+r.status)); }
+      return j;
     }
-    """
-    # Modelos esperados:
-    #   models.RefMedico(nombre=str)
-    #   models.RefCobertura(nombre=str)
-    #   models.RefSector(codigo=str, nombre=str)  (si no hay codigo, devolvemos solo nombre)
-    medicos = [r.nombre for r in db.query(models.RefMedico).order_by(models.RefMedico.nombre).all()]
-    coberturas = [r.nombre for r in db.query(models.RefCobertura).order_by(models.RefCobertura.nombre).all()]
-
-    sectores = []
-    for s in db.query(models.RefSector).all():
-        codigo = getattr(s, "codigo", None)
-        nombre = getattr(s, "nombre", None) or getattr(s, "descripcion", None) or ""
-        if codigo:
-            sectores.append({"codigo": codigo, "nombre": nombre or codigo})
-        else:
-            # fallback si tu tabla no tiene código
-            sectores.append({"codigo": nombre, "nombre": nombre})
-
-    return {"medicos": medicos, "coberturas": coberturas, "sectores": sectores}
-
-@router.post("/import/csv")
-async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    CSV con cabeceras: cirujano, especialidad, obra_social
-    """
-    import csv, io
-    raw = await file.read()
-    try:
-        txt = raw.decode("utf-8-sig")
-    except Exception:
-        txt = raw.decode("latin-1")
-
-    reader = csv.DictReader(io.StringIO(txt))
-    meds, esps, obras = set(), set(), set()
-    for row in reader:
-        cir = _norm(row.get("cirujano") or row.get("medico") or row.get("cirugia"))
-        esp = _norm(row.get("especialidad") or row.get("sector"))
-        obs = _norm(row.get("obra_social") or row.get("cobertura") or row.get("os"))
-        if cir: meds.add(cir)
-        if esp: esps.add(esp)
-        if obs: obras.add(obs)
-
-    m = _upsert_text_set(db, models.RefMedico, "nombre", meds)
-    c = _upsert_text_set(db, models.RefCobertura, "nombre", obras)
-    s = _upsert_text_set(db, models.RefSector, "nombre", esps)  # si tu modelo usa 'codigo', cambialo abajo
-
-    return {"ok": True, "medicos": m, "coberturas": c, "sectores": s}
-
-@router.post("/import/xls-html")
-async def import_xls_html(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    XLS-HTML exportado desde Excel (Página web).
-    """
-    from bs4 import BeautifulSoup
-    raw = await file.read()
-    soup = BeautifulSoup(raw, "html.parser")
-
-    rows = []
-    for tr in soup.find_all("tr"):
-        cols = [c.get_text(strip=True) for c in tr.find_all(["td", "th"])]
-        if cols: rows.append(cols)
-
-    if not rows: 
-        return {"ok": False, "detail": "No se detectaron filas en el HTML"}
-
-    headers = [h.lower() for h in rows[0]]
-    idx = {h:i for i,h in enumerate(headers)}
-
-    def pick(*cands):
-        for c in cands:
-            if c in idx: return idx[c]
-        return None
-
-    i_cir = pick("cirujano","medico","cirugia")
-    i_esp = pick("especialidad","sector")
-    i_obs = pick("obra_social","cobertura","os")
-
-    meds, esps, obras = set(), set(), set()
-    for r in rows[1:]:
-        if i_cir is not None and i_cir < len(r): meds.add(_norm(r[i_cir]))
-        if i_esp is not None and i_esp < len(r): esps.add(_norm(r[i_esp]))
-        if i_obs is not None and i_obs < len(r): obras.add(_norm(r[i_obs]))
-
-    meds.discard(""); esps.discard(""); obras.discard("")
-    m = _upsert_text_set(db, models.RefMedico, "nombre", meds)
-    c = _upsert_text_set(db, models.RefCobertura, "nombre", obras)
-    s = _upsert_text_set(db, models.RefSector, "nombre", esps)
-
-    return {"ok": True, "medicos": m, "coberturas": c, "sectores": s}
-
-@router.post("/import/xls")
-async def import_xls(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """
-    XLS/XLSX binario (requiere pandas + openpyxl instalados).
-    """
-    import pandas as pd, io, unicodedata
-    raw = await file.read()
-    try:
-        df = pd.read_excel(io.BytesIO(raw))
-    except Exception as e:
-        raise HTTPException(400, f"No se pudo leer Excel: {e}")
-
-    # normalizar cabeceras
-    def norm_col(x): 
-        return unicodedata.normalize('NFKD', str(x)).encode('ascii','ignore').decode().strip().lower()
-    df.columns = [norm_col(c) for c in df.columns]
-
-    def pick(*cands):
-        for c in cands:
-            if c in df.columns: return c
-        return None
-
-    col_cir = pick("cirujano","medico","cirugia","cirujano/a")
-    col_esp = pick("especialidad","sector")
-    col_obs = pick("obra_social","cobertura","os")
-
-    if not all([col_cir, col_esp, col_obs]):
-        raise HTTPException(400, "Faltan columnas: cirujano / especialidad / obra_social")
-
-    meds = {_norm(x) for x in df[col_cir].dropna().astype(str)}
-    esps = {_norm(x) for x in df[col_esp].dropna().astype(str)}
-    obras = {_norm(x) for x in df[col_obs].dropna().astype(str)}
-    meds.discard(""); esps.discard(""); obras.discard("")
-
-    m = _upsert_text_set(db, models.RefMedico, "nombre", meds)
-    c = _upsert_text_set(db, models.RefCobertura, "nombre", obras)
-    # Si tu tabla de sectores tiene 'codigo' y 'nombre', usar 'nombre' acá y luego completar códigos manualmente:
-    s = _upsert_text_set(db, models.RefSector, "nombre", esps)
-
-    return {"ok": True, "medicos": m, "coberturas": c, "sectores": s}
+    $('#btnCsv').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo CSV');
+      $('#out').textContent = 'Importando CSV…';
+      try{ const j = await postFile('/api/ref/import/csv', f); $('#out').textContent = JSON.stringify(j); }
+      catch(e){ $('#out').textContent = 'Error: '+e.message; }
+    };
+    $('#btnHtml').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo XLS-HTML');
+      $('#out').textContent = 'Importando XLS-HTML…';
+      try{ const j = await postFile('/api/ref/import/xls-html', f); $('#out').textContent = JSON.stringify(j); }
+      catch(e){ $('#out').textContent = 'Error: '+e.message; }
+    };
+    $('#btnXls').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo .xls/.xlsx');
+      $('#out').textContent = 'Importando XLS/XLSX…';
+      try{ const j = await postFile('/api/ref/import/xls', f); $('#out').textContent = JSON.stringify(j); }
+      catch(e){ $('#out').textContent = 'Error: '+e.message; }
+    };
+  </script>
+</body>
+</html>
