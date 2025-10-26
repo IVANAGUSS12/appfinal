@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <title>CEMIC · Oficina Virtual de Autorizaciones</title>
+  <style>
+    :root{
+      --verde:#064427; --gris:#f5f7f6; --line:#d6ddd9; --ink:#0f1e18; --muted:#4a5a54;
+      --white:#fff; --shadow:0 10px 28px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--gris);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
+    .wrap{max-width:760px;margin:28px auto;padding:0 16px}
+    .card{background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+    .head{background:var(--verde);color:#fff;padding:20px 24px}
+    .head h1{margin:0;font-size:22px;line-height:1.25}
+    .body{padding:22px 24px}
+    label{font-weight:700;font-size:14px;margin:12px 0 6px;display:block}
+    input,textarea,select,button{font-size:16px}
+    input,textarea,select{width:100%;border:1px solid var(--line);padding:12px;border-radius:10px;background:#fff}
+    textarea{min-height:110px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:720px){.row{grid-template-columns:1fr}}
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+    .btn{background:var(--verde);color:#fff;border:0;padding:14px;border-radius:12px;width:100%;font-weight:700;cursor:pointer;margin-top:16px}
+    .btn[disabled]{opacity:.7;cursor:not-allowed}
+    .wpp{position:fixed;right:18px;bottom:18px;background:#25D366;color:#fff;padding:12px 14px;border-radius:999px;text-decoration:none;font-weight:700;box-shadow:0 8px 18px rgba(0,0,0,.18)}
+    .help,.hint{font-size:12px;color:var(--muted);margin-top:6px}
+
+    /* === Combo buscable === */
+    .combo{position:relative}
+    .combo-input{padding-right:42px}
+    .combo-btn{
+      position:absolute; right:6px; top:50%; transform:translateY(-50%);
+      border:1px solid var(--line); background:#fff; border-radius:8px;
+      padding:8px 10px; cursor:pointer; font-size:14px; color:#193c2f;
+    }
+    .combo-menu{
+      position:absolute; left:0; right:0; top:calc(100% + 6px);
+      background:#fff; border:1px solid var(--line); border-radius:12px;
+      box-shadow:var(--shadow); max-height:260px; overflow:auto; z-index:50;
+      padding:6px;
+    }
+    .combo-item{
+      padding:12px; border-radius:10px; cursor:pointer; font-size:15px;
+      line-height:1.2;
+    }
+    .combo-item:hover, .combo-item[aria-selected="true"]{background:#eef7f1}
+    .combo-empty{padding:10px 12px; color:#4a5a54; font-size:13px}
+    @media (hover:none){.combo-item{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="head"><h1>CEMIC · Oficina Virtual de Autorizaciones</h1></div>
+      <div class="body">
+        <form id="form" novalidate>
+          <div class="row">
+            <div>
+              <label>Nombre y apellido *</label>
+              <input name="nombre" required placeholder="Ej: Juan Pérez">
+            </div>
+            <div>
+              <label>DNI *</label>
+              <input name="dni" required inputmode="numeric" placeholder="Ej: 12345678">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Correo electrónico *</label>
+              <input type="email" name="email" required placeholder="paciente@mail.com" autocomplete="email">
+            </div>
+            <div>
+              <label>Teléfono *</label>
+              <input name="telefono" required inputmode="tel" placeholder="11 5555-5555" autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Cobertura médica *</label>
+              <div class="combo" data-field="cobertura">
+                <input id="cobertura" name="cobertura" class="combo-input" required placeholder="Buscá o elegí de la lista">
+                <button class="combo-btn" type="button" aria-label="Abrir lista">▼</button>
+                <div class="combo-menu" role="listbox" hidden></div>
+              </div>
+              <div class="help">Escribí o abrí la lista y elegí tu obra social.</div>
+            </div>
+
+            <div>
+              <label>Médico tratante *</label>
+              <div class="combo" data-field="medico">
+                <input id="medico" name="medico" class="combo-input" required placeholder="Buscá o elegí de la lista">
+                <button class="combo-btn" type="button" aria-label="Abrir lista">▼</button>
+                <div class="combo-menu" role="listbox" hidden></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Sector *</label>
+              <select name="sector_code" required>
+                <option value="">Elegí…</option>
+                <option value="trauma">Traumatología</option>
+                <option value="hemo">Hemodinamia</option>
+              </select>
+            </div>
+            <div>
+              <label for="fecha_cx">Fecha de cirugía (opcional)</label>
+              <input id="fecha_cx" name="fecha_cx" type="date" />
+            </div>
+          </div>
+
+          <label>Foto de orden médica *</label>
+          <input type="file" name="orden_medica" accept="image/*,application/pdf" required>
+
+          <label>Foto de DNI *</label>
+          <input type="file" name="dni_file" accept="image/*,application/pdf" required>
+
+          <label>Foto de credencial *</label>
+          <input type="file" name="credencial" accept="image/*,application/pdf" required>
+
+          <label for="orden_materiales">Orden de pedido de materiales (opcional)</label>
+          <input id="orden_materiales" name="orden_materiales" type="file" accept=".jpg,.jpeg,.png,.pdf" />
+          <div class="hint">Podés subir JPG, PNG o PDF. Máx. 15 MB por archivo.</div>
+
+          <label>Observaciones</label>
+          <textarea name="observaciones" placeholder="Comentarios adicionales"></textarea>
+
+          <div class="note">Formatos permitidos: JPG/PNG/PDF. Máximo 15 MB por archivo.</div>
+
+          <button class="btn" id="sendBtn" type="submit">Enviar solicitud</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <a class="wpp" href="https://wa.me/5491155922359" target="_blank" rel="noopener">WhatsApp</a>
+
+  <script>
+    const GS_URL = "https://script.google.com/macros/s/AKfycbz8E1tB4rTzcc-90QIIv_92KSSPNv464M1jkKYQDkBd5cUo_4GQH0keNrs-BvXBSuxC/exec";
+
+    // === Listas originales ===
+    function mountCombo(container, data){
+      const input = container.querySelector('.combo-input');
+      const btn = container.querySelector('.combo-btn');
+      const menu = container.querySelector('.combo-menu');
+      let current=-1, open=false, items=[];
+
+      function render(list){
+        menu.innerHTML='';
+        if(!list.length){menu.innerHTML='<div class="combo-empty">Sin coincidencias</div>';return;}
+        list.forEach((txt,idx)=>{
+          const el=document.createElement('div');
+          el.className='combo-item'; el.textContent=txt;
+          el.addEventListener('click',()=>{input.value=txt; close();});
+          menu.appendChild(el);
+        });
+        items=Array.from(menu.querySelectorAll('.combo-item'));
+      }
+      function filter(){
+        const q=input.value.trim().toLowerCase();
+        const list=!q?data:data.filter(v=>v.toLowerCase().includes(q));
+        render(list.slice(0,250));
+      }
+      function openMenu(){if(open)return;filter();menu.hidden=false;open=true;}
+      function close(){if(!open)return;menu.hidden=true;open=false;}
+      input.addEventListener('focus',openMenu);
+      input.addEventListener('input',()=>{if(!open)openMenu();else filter();});
+      btn.addEventListener('click',()=>{open?close():openMenu();});
+      document.addEventListener('click',e=>{if(!container.contains(e.target))close();});
+      render(data.slice(0,200));
+    }
+
+    function fileToBase64(file){return new Promise((r,j)=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.onerror=j;fr.readAsDataURL(file);});}
+
+    window.addEventListener('DOMContentLoaded',()=>{
+      mountCombo(document.querySelector('.combo[data-field="cobertura"]'),OBRAS);
+      mountCombo(document.querySelector('.combo[data-field="medico"]'),MEDICOS);
+
+      const form=document.getElementById('form'); const btn=document.getElementById('sendBtn'); const MAX=15*1024*1024;
+
+      form.addEventListener('submit',async e=>{
+        e.preventDefault();
+        const f1=form.orden_medica.files[0], f2=form.dni_file.files[0], f3=form.credencial.files[0], f4=form.orden_materiales.files[0];
+        if(!f1||!f2||!f3){alert('Adjuntá la orden médica, DNI y credencial.');return;}
+        if([f1,f2,f3,f4].some(f=>f && f.size>MAX)){alert('Cada archivo debe pesar hasta 15 MB.');return;}
+        btn.disabled=true;btn.textContent='Enviando…';
+        try{
+          const payload={
+            nombre:form.nombre.value.trim(),dni:form.dni.value.trim(),email:form.email.value.trim(),
+            telefono:form.telefono.value.trim(),cobertura:form.cobertura.value.trim(),medico:form.medico.value.trim(),
+            observaciones:form.observaciones.value.trim(),fecha_cx:form.fecha_cx.value||"",sector_code:form.sector_code.value,
+            orden_medica:{name:f1.name,type:f1.type,base64:await fileToBase64(f1)},
+            dni_file:{name:f2.name,type:f2.type,base64:await fileToBase64(f2)},
+            credencial:{name:f3.name,type:f3.type,base64:await fileToBase64(f3)},
+            orden_materiales:f4?{name:f4.name,type:f4.type,base64:await fileToBase64(f4)}:null
+          };
+          await fetch(GS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          window.location.href='gracias.html';
+        }catch(err){alert('Error al enviar: '+err.message);}finally{btn.disabled=false;btn.textContent='Enviar solicitud';}
+      });
+    });
+  </script>
+
+<script>
+  async function fetchLists(){ const r=await fetch('/api/ref/lists'); return r.json(); }
+  window.addEventListener('DOMContentLoaded', async ()=>{
+    try{
+      const d = await fetchLists();
+      const med=(d.medicos||[]).sort((a,b)=>a.localeCompare(b));
+      const cob=(d.coberturas||[]).sort((a,b)=>a.localeCompare(b));
+      const selSector = document.querySelector('select[name="sector_code"]');
+      if(selSector && d.sectores){ selSector.innerHTML = '<option value=\"\">Elegí…</option>'+ d.sectores.map(s=>`<option value=\"${s.codigo}\">${s.nombre}</option>`).join(''); }
+      // popular combos tipo input free + menú si tu HTML los usa; si son <select>, adaptá acá.
+      const selCob=document.querySelector('select[name="cobertura"]'); if(selCob){ selCob.innerHTML = '<option value=\"\">Elegí…</option>'+ cob.map(x=>`<option>${x}</option>`).join(''); }
+      const selMed=document.querySelector('select[name="medico"]'); if(selMed){ selMed.innerHTML = '<option value=\"\">Elegí…</option>'+ med.map(x=>`<option>${x}</option>`).join(''); }
+    }catch(e){ console.error('No se pudieron cargar listas', e); }
+  });
+</script>
+
+</body></html>

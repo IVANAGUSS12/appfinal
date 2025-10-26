@@ -1,0 +1,67 @@
+
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sector</title>
+<style>
+body{margin:0;background:#f5f7f6;font:15px system-ui,Segoe UI,Roboto,Arial;color:#0e2720}
+.header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:16px 20px}
+.btn{border:0;background:#064427;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
+.card{background:#fff;border:1px solid #e6efea;border-radius:16px;box-shadow:0 18px 50px rgba(6,68,39,.12);margin:0 20px 20px;padding:16px}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th,td{border-bottom:1px solid #e6efea;padding:10px;text-align:left}
+select{border:1px solid #cfe2da;border-radius:10px;padding:6px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #cfe2da;background:#eef7f1}
+</style></head><body>
+<div class="header">
+  <div>
+    <a class="btn" href="/menu.html">← Menú</a>
+  </div>
+  <h1 id="title">Sector</h1>
+  <div><a class="btn" href="/qr.html">Cargar nuevo</a></div>
+</div>
+<div class="card">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+    <input id="q" placeholder="Buscar" style="border:1px solid #cfe2da;border-radius:10px;padding:8px 10px">
+    <select id="estado">
+      <option value="">Estado (todos)</option>
+      <option>Pendiente</option><option>Autorizado</option><option>Falta materiales</option>
+      <option>Solicitado</option><option>Materiales OK</option><option>Autorizado material pendiente</option>
+      <option>rechazado por cobertura</option>
+    </select>
+    <button class="btn" onclick="load()">Actualizar</button>
+    <div style="margin-left:auto">Total: <b id="kTotal">—</b></div>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>Paciente</th><th>DNI</th><th>Fecha CX</th><th>Estado</th><th>Cambiar sector</th></tr></thead>
+    <tbody id="tbody"><tr><td colspan="6">Cargando…</td></tr></tbody>
+  </table>
+</div>
+<script>
+const u = new URL(location.href); const code = u.searchParams.get('code'); const name = u.searchParams.get('name');
+document.getElementById('title').textContent = name || code || 'Sector';
+async function sectores(){ const r=await fetch('/api/ref/lists'); const d=await r.json(); return d.sectores||[]; }
+async function load(){
+  const q=document.getElementById('q').value||''; const estado=document.getElementById('estado').value||'';
+  const r=await fetch(`/api/patients?q=${encodeURIComponent(q)}&estado=${encodeURIComponent(estado)}&sector_code=${encodeURIComponent(code)}&page=1&pageSize=200`);
+  const d=await r.json(); const tbody=document.getElementById('tbody'); document.getElementById('kTotal').textContent=d.total||0;
+  const secs = await sectores();
+  const options = secs.map(s=>`<option value="${s.codigo}">${s.nombre}</option>`).join('');
+  tbody.innerHTML = (d.rows||[]).map((p,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><b>${p.nombre}</b><div style="color:#5c6e68">${p.cobertura} · ${p.medico}</div></td>
+    <td>${p.dni||''}</td>
+    <td>${p.fecha_cx||''}</td>
+    <td><span class="badge">${p.estado||'Pendiente'}</span></td>
+    <td>
+      <select data-id="${p._row}" onchange="move(this.value, this.dataset.id)"><option value="">Elegí…</option>${options}</select>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="6">Sin pacientes.</td></tr>';
+}
+async function move(sector_code, id){
+  if(!sector_code||!id) return;
+  await fetch(`/api/patients/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sector_code})});
+  load();
+}
+load();
+</script>
+</body></html>

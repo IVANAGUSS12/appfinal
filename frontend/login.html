@@ -1,0 +1,32 @@
+
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ingreso | Autorizaciones</title>
+<style>
+body{margin:0;background:#f5f7f6;font:16px/1.4 system-ui,Segoe UI,Roboto,Arial;color:#0e2720;display:grid;place-items:center;min-height:100vh}
+.card{width:min(440px,94vw);background:#fff;border:1px solid #e6efea;border-radius:16px;box-shadow:0 18px 50px rgba(6,68,39,.12);padding:24px}
+h1{margin:0 0 8px}
+label{display:block;font-weight:700;margin:12px 0 6px}
+input{width:100%;border:1px solid #cfe2da;border-radius:10px;padding:12px}
+.btn{margin-top:16px;width:100%;border:0;background:#064427;color:#fff;border-radius:10px;padding:12px 14px;font-weight:700;cursor:pointer}
+.small{margin-top:10px;color:#5c6e68;font-size:14px}
+</style></head><body>
+<div class="card">
+  <h1>Ingreso</h1>
+  <p class="small">Acceso al panel por especialidad.</p>
+  <label>Email</label><input id="email" type="email" autofocus>
+  <label>Contraseña</label><input id="password" type="password">
+  <button class="btn" id="btn">Ingresar</button>
+</div>
+<script>
+document.getElementById('btn').onclick = async ()=>{
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const d=await r.json();
+  if(!r.ok||!d.ok){ alert('Credenciales inválidas'); return; }
+  localStorage.setItem('token', d.token);
+  location.href='/menu.html';
+};
+</script>
+</body></html>

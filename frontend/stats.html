@@ -1,0 +1,38 @@
+
+<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estadísticas</title>
+<style>body{margin:0;background:#f5f7f6;font:15px system-ui,Segoe UI,Roboto,Arial;color:#0e2720}
+.wrap{max-width:1100px;margin:20px auto;padding:0 16px}
+.card{background:#fff;border:1px solid #e6efea;border-radius:16px;box-shadow:0 18px 50px rgba(6,68,39,.12);padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+table{width:100%;border-collapse:separate;border-spacing:0}th,td{border-bottom:1px solid #e6efea;padding:8px}
+.btn{border:0;background:#064427;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer;text-decoration:none}
+</style></head><body>
+<div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <a class="btn" href="/menu.html">← Menú</a>
+    <h1>Estadísticas</h1><span></span>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <input id="q" placeholder="Buscar" style="border:1px solid #cfe2da;border-radius:10px;padding:8px 10px">
+      <button class="btn" onclick="load()">Actualizar</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+<script>
+function renderTable(title, obj){
+  const rows = Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);
+  return `<div class="card"><h3>${title}</h3>
+  <table><thead><tr><th>Valor</th><th>Cantidad</th></tr></thead>
+  <tbody>`+ rows.map(([k,v])=>`<tr><td>${k||'—'}</td><td>${v}</td></tr>`).join('') + `</tbody></table></div>`;
+}
+async function load(){
+  const q=document.getElementById('q').value||'';
+  const r=await fetch('/api/stats?q='+encodeURIComponent(q)); const d=await r.json();
+  document.getElementById('grid').innerHTML = renderTable('Por estado', d.estado) + renderTable('Por cobertura', d.cobertura) + renderTable('Por médico', d.medico);
+}
+load();
+</script>
+</body></html>
