@@ -145,48 +145,7 @@
     const GS_URL = "https://script.google.com/macros/s/AKfycbz8E1tB4rTzcc-90QIIv_92KSSPNv464M1jkKYQDkBd5cUo_4GQH0keNrs-BvXBSuxC/exec";
 
     // === Listas originales ===
-    function mountCombo(container, data){
-      const input = container.querySelector('.combo-input');
-      const btn = container.querySelector('.combo-btn');
-      const menu = container.querySelector('.combo-menu');
-      let current=-1, open=false, items=[];
-
-      function render(list){
-        menu.innerHTML='';
-        if(!list.length){menu.innerHTML='<div class="combo-empty">Sin coincidencias</div>';return;}
-        list.forEach((txt,idx)=>{
-          const el=document.createElement('div');
-          el.className='combo-item'; el.textContent=txt;
-          el.addEventListener('click',()=>{input.value=txt; close();});
-          menu.appendChild(el);
-        });
-        items=Array.from(menu.querySelectorAll('.combo-item'));
-      }
-      function filter(){
-        const q=input.value.trim().toLowerCase();
-        const list=!q?data:data.filter(v=>v.toLowerCase().includes(q));
-        render(list.slice(0,250));
-      }
-      function openMenu(){if(open)return;filter();menu.hidden=false;open=true;}
-      function close(){if(!open)return;menu.hidden=true;open=false;}
-      input.addEventListener('focus',openMenu);
-      input.addEventListener('input',()=>{if(!open)openMenu();else filter();});
-      btn.addEventListener('click',()=>{open?close():openMenu();});
-      document.addEventListener('click',e=>{if(!container.contains(e.target))close();});
-      render(data.slice(0,200));
-    }
-
-    function fileToBase64(file){return new Promise((r,j)=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(',')[1]);fr.onerror=j;fr.readAsDataURL(file);});}
-
-    window.addEventListener('DOMContentLoaded',()=>{
-      mountCombo(document.querySelector('.combo[data-field="cobertura"]'),OBRAS);
-      mountCombo(document.querySelector('.combo[data-field="medico"]'),MEDICOS);
-
-      const form=document.getElementById('form'); const btn=document.getElementById('sendBtn'); const MAX=15*1024*1024;
-
-      form.addEventListener('submit',async e=>{
-        e.preventDefault();
-        const f1=form.orden_medica.files[0], f2=form.dni_file.files[0], f3=form.credencial.files[0], f4=form.orden_materiales.files[0];
+    
         if(!f1||!f2||!f3){alert('Adjuntá la orden médica, DNI y credencial.');return;}
         if([f1,f2,f3,f4].some(f=>f && f.size>MAX)){alert('Cada archivo debe pesar hasta 15 MB.');return;}
         btn.disabled=true;btn.textContent='Enviando…';
@@ -208,19 +167,75 @@
   </script>
 
 <script>
-  async function fetchLists(){ const r=await fetch('/api/ref/lists'); return r.json(); }
-  window.addEventListener('DOMContentLoaded', async ()=>{
+(async function(){
+  try{
+    const resp = await fetch('/api/ref/lists');
+    const lists = await resp.json();
+    const obras = (lists.coberturas||[]);
+    const medicos = (lists.medicos||[]);
+    const sectores = (lists.sectores||[]);
+
+    const selObra = document.querySelector('select[name="cobertura"], #obra_social, #cobertura');
+    const selMedico = document.querySelector('select[name="medico"], #medico');
+    const selSector = document.querySelector('select[name="sector_code"], select[name="sector"], #sector');
+
+    function fillSelect(sel, items, map=(x)=>({value:x,text:x})) {
+      if(!sel) return;
+      const had = new Set();
+      sel.innerHTML = '<option value="">Elegí…</option>';
+      items.forEach(it=>{
+        const o = map(it);
+        if(!o || !o.text || had.has(o.text)) return;
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.text;
+        sel.appendChild(opt);
+        had.add(o.text);
+      });
+    }
+
+    fillSelect(selObra, obras);
+    fillSelect(selMedico, medicos);
+    fillSelect(selSector, sectores, (s)=>({value:s.codigo, text:s.nombre}));
+  }catch(e){
+    console.error('No se pudieron cargar listas desde /api/ref/lists', e);
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  const form = document.querySelector('form') || document.getElementById('form');
+  if(!form) return;
+  if(form.dataset.patchedSubmit==="ok") return;
+  form.dataset.patchedSubmit="ok";
+
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    const fd = new FormData(form);
+    // map expected fields
+    const map = { sector:'sector_code' };
+    const fd2 = new FormData();
+    for(const [k,v] of fd.entries()){
+      fd2.append(map[k] || k, v);
+    }
+    if(!fd2.get('orden_medica') || !fd2.get('dni_file') || !fd2.get('credencial')){
+      alert('Adjuntá orden médica, DNI y credencial.'); return;
+    }
+    const btn = form.querySelector('button[type="submit"], input[type="submit"]');
+    if(btn){ btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent='Enviando…'; }
     try{
-      const d = await fetchLists();
-      const med=(d.medicos||[]).sort((a,b)=>a.localeCompare(b));
-      const cob=(d.coberturas||[]).sort((a,b)=>a.localeCompare(b));
-      const selSector = document.querySelector('select[name="sector_code"]');
-      if(selSector && d.sectores){ selSector.innerHTML = '<option value=\"\">Elegí…</option>'+ d.sectores.map(s=>`<option value=\"${s.codigo}\">${s.nombre}</option>`).join(''); }
-      // popular combos tipo input free + menú si tu HTML los usa; si son <select>, adaptá acá.
-      const selCob=document.querySelector('select[name="cobertura"]'); if(selCob){ selCob.innerHTML = '<option value=\"\">Elegí…</option>'+ cob.map(x=>`<option>${x}</option>`).join(''); }
-      const selMed=document.querySelector('select[name="medico"]'); if(selMed){ selMed.innerHTML = '<option value=\"\">Elegí…</option>'+ med.map(x=>`<option>${x}</option>`).join(''); }
-    }catch(e){ console.error('No se pudieron cargar listas', e); }
+      const r = await fetch('/api/patients', {method:'POST', body: fd2});
+      if(!r.ok){ const d=await r.json().catch(()=>({detail:r.statusText})); throw new Error(d.detail||('HTTP '+r.status)); }
+      location.href = 'gracias.html';
+    }catch(err){
+      alert('Error al enviar: '+(err.message||err));
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent = btn.dataset.old||'Enviar'; }
+    }
   });
+})();
 </script>
 
 </body></html>
