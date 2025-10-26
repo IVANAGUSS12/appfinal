@@ -62,3 +62,42 @@ async def import_xls_html(file: UploadFile = File(...), db: Session = Depends(ge
             if idx_o is not None and idx_o < len(cols): obr.add(_norm(cols[idx_o].get_text(strip=True)))
     _upsert(db, med, esp, obr)
     return {"ok": True, "medicos": len(med), "coberturas": len(obr), "sectores": len(esp)}
+@router.post("/import/xls")
+async def import_xls(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    import pandas as pd, io, unicodedata
+    content = await file.read()
+    try:
+        df = pd.read_excel(io.BytesIO(content))  # openpyxl
+    except Exception as e:
+        return {"ok": False, "detail": f"No se pudo leer Excel: {e}"}
+
+    # normalizar cabeceras
+    df.columns = [unicodedata.normalize('NFKD', str(c)).encode('ascii','ignore').decode().strip().lower()
+                  for c in df.columns]
+
+    def pick(*cands):
+        for c in cands:
+            if c in df.columns: return c
+        return None
+
+    col_cir = pick('cirujano','medico','cirugia','cirujano/a')
+    col_esp = pick('especialidad','sector')
+    col_obs = pick('obra_social','cobertura','os')
+
+    if not all([col_cir, col_esp, col_obs]):
+        return {"ok": False, "detail": "Faltan columnas: cirujano / especialidad / obra_social"}
+
+    def clean(s):
+        s = str(s).strip()
+        return s if s and s.lower() not in ('nan','none','null') else ''
+
+    meds = { clean(x) for x in df[col_cir].dropna().astype(str) }
+    esps = { clean(x) for x in df[col_esp].dropna().astype(str) }
+    obras = { clean(x) for x in df[col_obs].dropna().astype(str) }
+    meds.discard(''); esps.discard(''); obras.discard('')
+
+    # usa tus funciones/helpers actuales de guardado/dedup
+    # asumimos existen: save_reference_sets(db, medicos=set(), especialidades=set(), coberturas=set())
+    from .ref import save_reference_sets as _save
+    added = _save(db, medicos=meds, especialidades=esps, coberturas=obras)
+    return {"ok": True, **added}

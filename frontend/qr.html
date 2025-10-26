@@ -1,241 +1,175 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CEMIC · Oficina Virtual de Autorizaciones</title>
   <style>
     :root{
-      --verde:#064427; --gris:#f5f7f6; --line:#d6ddd9; --ink:#0f1e18; --muted:#4a5a54;
-      --white:#fff; --shadow:0 10px 28px rgba(0,0,0,.08);
+      --green:#064427; --green-2:#0e2720; --muted:#5c6e68; --bg:#f3f7f5;
+      --card:#fff; --line:#e6efea; --shadow:0 12px 34px rgba(6,68,39,.08); --radius:16px;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--gris);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
-    .wrap{max-width:760px;margin:28px auto;padding:0 16px}
-    .card{background:#fff;border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
-    .head{background:var(--verde);color:#fff;padding:20px 24px}
-    .head h1{margin:0;font-size:22px;line-height:1.25}
-    .body{padding:22px 24px}
-    label{font-weight:700;font-size:14px;margin:12px 0 6px;display:block}
-    input,textarea,select,button{font-size:16px}
-    input,textarea,select{width:100%;border:1px solid var(--line);padding:12px;border-radius:10px;background:#fff}
+    body{margin:0;background:var(--bg);color:var(--green-2);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif}
+    .wrap{max-width:960px;margin:28px auto;padding:0 18px}
+    .title{background:var(--green);color:#fff;padding:16px 18px;border-top-left-radius:var(--radius);border-top-right-radius:var(--radius);font-weight:900}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:18px}
+    @media (max-width:820px){ .grid{grid-template-columns:1fr} }
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input,select,textarea{width:100%;padding:12px 14px;border:1px solid #cfe2da;border-radius:12px;font-size:15px;outline:none;background:#fff}
     textarea{min-height:110px;resize:vertical}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    @media(max-width:720px){.row{grid-template-columns:1fr}}
-    .note{font-size:12px;color:var(--muted);margin-top:8px}
-    .btn{background:var(--verde);color:#fff;border:0;padding:14px;border-radius:12px;width:100%;font-weight:700;cursor:pointer;margin-top:16px}
-    .btn[disabled]{opacity:.7;cursor:not-allowed}
-    .wpp{position:fixed;right:18px;bottom:18px;background:#25D366;color:#fff;padding:12px 14px;border-radius:999px;text-decoration:none;font-weight:700;box-shadow:0 8px 18px rgba(0,0,0,.18)}
-    .help,.hint{font-size:12px;color:var(--muted);margin-top:6px}
-
-    /* === Combo buscable === */
-    .combo{position:relative}
-    .combo-input{padding-right:42px}
-    .combo-btn{
-      position:absolute; right:6px; top:50%; transform:translateY(-50%);
-      border:1px solid var(--line); background:#fff; border-radius:8px;
-      padding:8px 10px; cursor:pointer; font-size:14px; color:#193c2f;
-    }
-    .combo-menu{
-      position:absolute; left:0; right:0; top:calc(100% + 6px);
-      background:#fff; border:1px solid var(--line); border-radius:12px;
-      box-shadow:var(--shadow); max-height:260px; overflow:auto; z-index:50;
-      padding:6px;
-    }
-    .combo-item{
-      padding:12px; border-radius:10px; cursor:pointer; font-size:15px;
-      line-height:1.2;
-    }
-    .combo-item:hover, .combo-item[aria-selected="true"]{background:#eef7f1}
-    .combo-empty{padding:10px 12px; color:#4a5a54; font-size:13px}
-    @media (hover:none){.combo-item{padding:14px}}
+    input:focus,select:focus,textarea:focus{border-color:#9dcab7;box-shadow:0 0 0 3px rgba(95,167,138,.15)}
+    .row{display:flex;flex-direction:column}
+    .full{grid-column:1 / -1}
+    .btn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="head"><h1>CEMIC · Oficina Virtual de Autorizaciones</h1></div>
-      <div class="body">
-        <form id="form" novalidate>
+      <div class="title">CEMIC · Oficina Virtual de Autorizaciones</div>
+      <form id="form">
+        <div class="grid">
           <div class="row">
-            <div>
-              <label>Nombre y apellido *</label>
-              <input name="nombre" required placeholder="Ej: Juan Pérez">
-            </div>
-            <div>
-              <label>DNI *</label>
-              <input name="dni" required inputmode="numeric" placeholder="Ej: 12345678">
-            </div>
+            <label for="nombre">Nombre y apellido *</label>
+            <input id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required>
+          </div>
+          <div class="row">
+            <label for="dni">DNI *</label>
+            <input id="dni" name="dni" placeholder="Ej: 12345678" required>
           </div>
 
           <div class="row">
-            <div>
-              <label>Correo electrónico *</label>
-              <input type="email" name="email" required placeholder="paciente@mail.com" autocomplete="email">
-            </div>
-            <div>
-              <label>Teléfono *</label>
-              <input name="telefono" required inputmode="tel" placeholder="11 5555-5555" autocomplete="tel">
-            </div>
+            <label for="email">Correo electrónico *</label>
+            <input id="email" name="email" type="email" placeholder="paciente@mail.com" required>
+          </div>
+          <div class="row">
+            <label for="telefono">Teléfono *</label>
+            <input id="telefono" name="telefono" placeholder="11 5555-5555" required>
           </div>
 
           <div class="row">
-            <div>
-              <label>Cobertura médica *</label>
-              <div class="combo" data-field="cobertura">
-                <input id="cobertura" name="cobertura" class="combo-input" required placeholder="Buscá o elegí de la lista">
-                <button class="combo-btn" type="button" aria-label="Abrir lista">▼</button>
-                <div class="combo-menu" role="listbox" hidden></div>
-              </div>
-              <div class="help">Escribí o abrí la lista y elegí tu obra social.</div>
-            </div>
-
-            <div>
-              <label>Médico tratante *</label>
-              <div class="combo" data-field="medico">
-                <input id="medico" name="medico" class="combo-input" required placeholder="Buscá o elegí de la lista">
-                <button class="combo-btn" type="button" aria-label="Abrir lista">▼</button>
-                <div class="combo-menu" role="listbox" hidden></div>
-              </div>
-            </div>
+            <label for="obra_social">Cobertura médica *</label>
+            <select id="obra_social" name="cobertura" required>
+              <option value="">Buscá o elegí de la lista</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="medico">Médico tratante *</label>
+            <select id="medico" name="medico" required>
+              <option value="">Buscá o elegí de la lista</option>
+            </select>
           </div>
 
           <div class="row">
-            <div>
-              <label>Sector *</label>
-              <select name="sector_code" required>
-                <option value="">Elegí…</option>
-                <option value="trauma">Traumatología</option>
-                <option value="hemo">Hemodinamia</option>
-              </select>
-            </div>
-            <div>
-              <label for="fecha_cx">Fecha de cirugía (opcional)</label>
-              <input id="fecha_cx" name="fecha_cx" type="date" />
-            </div>
+            <label for="sector">Sector *</label>
+            <select id="sector" name="sector_code" required>
+              <option value="">Elegí…</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="fecha_cx">Fecha de cirugía (opcional)</label>
+            <input id="fecha_cx" name="fecha_cx" type="date" placeholder="dd/mm/aaaa">
           </div>
 
-          <label>Foto de orden médica *</label>
-          <input type="file" name="orden_medica" accept="image/*,application/pdf" required>
+          <div class="row full">
+            <label for="orden_medica">Foto de orden médica *</label>
+            <input id="orden_medica" name="orden_medica" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" required>
+          </div>
+          <div class="row full">
+            <label for="dni_file">Foto de DNI *</label>
+            <input id="dni_file" name="dni_file" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" required>
+          </div>
+          <div class="row full">
+            <label for="credencial">Foto de credencial *</label>
+            <input id="credencial" name="credencial" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" required>
+          </div>
+          <div class="row full">
+            <label for="orden_materiales">Orden de pedido de materiales (opcional)</label>
+            <input id="orden_materiales" name="orden_materiales" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf">
+          </div>
 
-          <label>Foto de DNI *</label>
-          <input type="file" name="dni_file" accept="image/*,application/pdf" required>
+          <div class="row full">
+            <label for="observaciones">Observaciones</label>
+            <textarea id="observaciones" name="observaciones" placeholder="Comentarios adicionales"></textarea>
+            <div class="muted">Podés subir JPG, PNG o PDF. Máx. 15 MB por archivo.</div>
+          </div>
 
-          <label>Foto de credencial *</label>
-          <input type="file" name="credencial" accept="image/*,application/pdf" required>
-
-          <label for="orden_materiales">Orden de pedido de materiales (opcional)</label>
-          <input id="orden_materiales" name="orden_materiales" type="file" accept=".jpg,.jpeg,.png,.pdf" />
-          <div class="hint">Podés subir JPG, PNG o PDF. Máx. 15 MB por archivo.</div>
-
-          <label>Observaciones</label>
-          <textarea name="observaciones" placeholder="Comentarios adicionales"></textarea>
-
-          <div class="note">Formatos permitidos: JPG/PNG/PDF. Máximo 15 MB por archivo.</div>
-
-          <button class="btn" id="sendBtn" type="submit">Enviar solicitud</button>
-        </form>
-      </div>
+          <div class="row full">
+            <button class="btn" type="submit" id="btnEnviar">Enviar</button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 
-  <a class="wpp" href="https://wa.me/5491155922359" target="_blank" rel="noopener">WhatsApp</a>
-
   <script>
-    const GS_URL = "https://script.google.com/macros/s/AKfycbz8E1tB4rTzcc-90QIIv_92KSSPNv464M1jkKYQDkBd5cUo_4GQH0keNrs-BvXBSuxC/exec";
-
-    // === Listas originales ===
-    
-        if(!f1||!f2||!f3){alert('Adjuntá la orden médica, DNI y credencial.');return;}
-        if([f1,f2,f3,f4].some(f=>f && f.size>MAX)){alert('Cada archivo debe pesar hasta 15 MB.');return;}
-        btn.disabled=true;btn.textContent='Enviando…';
+    // Cargar listas desde la DB
+    document.addEventListener('DOMContentLoaded', function(){
+      (async function(){
         try{
-          const payload={
-            nombre:form.nombre.value.trim(),dni:form.dni.value.trim(),email:form.email.value.trim(),
-            telefono:form.telefono.value.trim(),cobertura:form.cobertura.value.trim(),medico:form.medico.value.trim(),
-            observaciones:form.observaciones.value.trim(),fecha_cx:form.fecha_cx.value||"",sector_code:form.sector_code.value,
-            orden_medica:{name:f1.name,type:f1.type,base64:await fileToBase64(f1)},
-            dni_file:{name:f2.name,type:f2.type,base64:await fileToBase64(f2)},
-            credencial:{name:f3.name,type:f3.type,base64:await fileToBase64(f3)},
-            orden_materiales:f4?{name:f4.name,type:f4.type,base64:await fileToBase64(f4)}:null
-          };
-          await fetch(GS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-          window.location.href='gracias.html';
-        }catch(err){alert('Error al enviar: '+err.message);}finally{btn.disabled=false;btn.textContent='Enviar solicitud';}
-      });
+          const r = await fetch('/api/ref/lists');
+          const j = await r.json();
+          const coberturas = j.coberturas || [];
+          const medicos    = j.medicos || [];
+          const sectores   = j.sectores || []; // [{codigo, nombre}] o strings
+
+          const obraSel = document.getElementById('obra_social');
+          const medSel  = document.getElementById('medico');
+          const secSel  = document.getElementById('sector');
+
+          function llenar(sel, arr, map){
+            if(!sel) return;
+            sel.innerHTML = '<option value="">Elegí…</option>';
+            const usados = new Set();
+            arr.forEach(x=>{
+              const o = map ? map(x) : {value:x, text:x};
+              if(!o || !o.text || usados.has(o.text)) return;
+              const opt = document.createElement('option');
+              opt.value = o.value; opt.textContent = o.text;
+              sel.appendChild(opt); usados.add(o.text);
+            });
+          }
+
+          llenar(obraSel, coberturas, x=>({value:x, text:x}));
+          llenar(medSel,  medicos,    x=>({value:x, text:x}));
+          llenar(secSel,  sectores,   s=>({value:(s.codigo??s), text:(s.nombre??s)}));
+        }catch(err){
+          console.error('No se pudieron cargar las listas', err);
+        }
+      })();
     });
-  </script>
 
-<script>
-(async function(){
-  try{
-    const resp = await fetch('/api/ref/lists');
-    const lists = await resp.json();
-    const obras = (lists.coberturas||[]);
-    const medicos = (lists.medicos||[]);
-    const sectores = (lists.sectores||[]);
+    // Envío a /api/patients (multipart)
+    (function(){
+      const form = document.getElementById('form'), btn = document.getElementById('btnEnviar');
+      if(!form) return;
 
-    const selObra = document.querySelector('select[name="cobertura"], #obra_social, #cobertura');
-    const selMedico = document.querySelector('select[name="medico"], #medico');
-    const selSector = document.querySelector('select[name="sector_code"], select[name="sector"], #sector');
+      form.addEventListener('submit', async function(ev){
+        ev.preventDefault();
+        const fd = new FormData(form);
 
-    function fillSelect(sel, items, map=(x)=>({value:x,text:x})) {
-      if(!sel) return;
-      const had = new Set();
-      sel.innerHTML = '<option value="">Elegí…</option>';
-      items.forEach(it=>{
-        const o = map(it);
-        if(!o || !o.text || had.has(o.text)) return;
-        const opt = document.createElement('option');
-        opt.value = o.value;
-        opt.textContent = o.text;
-        sel.appendChild(opt);
-        had.add(o.text);
+        // Validación simple de adjuntos obligatorios
+        if(!fd.get('orden_medica') || !fd.get('dni_file') || !fd.get('credencial')){
+          alert('Adjuntá orden médica, DNI y credencial.'); return;
+        }
+
+        btn.disabled = true; const old = btn.textContent; btn.textContent = 'Enviando…';
+        try{
+          const r = await fetch('/api/patients', { method:'POST', body: fd });
+          const d = await r.json().catch(()=>({}));
+          if(!r.ok) throw new Error(d.detail||('HTTP '+r.status));
+          alert('Enviado correctamente');
+          form.reset();
+        }catch(err){
+          alert('Error al enviar: ' + (err.message||err));
+        }finally{
+          btn.disabled=false; btn.textContent=old;
+        }
       });
-    }
-
-    fillSelect(selObra, obras);
-    fillSelect(selMedico, medicos);
-    fillSelect(selSector, sectores, (s)=>({value:s.codigo, text:s.nombre}));
-  }catch(e){
-    console.error('No se pudieron cargar listas desde /api/ref/lists', e);
-  }
-})();
-</script>
-
-
-<script>
-(function(){
-  const form = document.querySelector('form') || document.getElementById('form');
-  if(!form) return;
-  if(form.dataset.patchedSubmit==="ok") return;
-  form.dataset.patchedSubmit="ok";
-
-  form.addEventListener('submit', async function(ev){
-    ev.preventDefault();
-    const fd = new FormData(form);
-    // map expected fields
-    const map = { sector:'sector_code' };
-    const fd2 = new FormData();
-    for(const [k,v] of fd.entries()){
-      fd2.append(map[k] || k, v);
-    }
-    if(!fd2.get('orden_medica') || !fd2.get('dni_file') || !fd2.get('credencial')){
-      alert('Adjuntá orden médica, DNI y credencial.'); return;
-    }
-    const btn = form.querySelector('button[type="submit"], input[type="submit"]');
-    if(btn){ btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent='Enviando…'; }
-    try{
-      const r = await fetch('/api/patients', {method:'POST', body: fd2});
-      if(!r.ok){ const d=await r.json().catch(()=>({detail:r.statusText})); throw new Error(d.detail||('HTTP '+r.status)); }
-      location.href = 'gracias.html';
-    }catch(err){
-      alert('Error al enviar: '+(err.message||err));
-    }finally{
-      if(btn){ btn.disabled=false; btn.textContent = btn.dataset.old||'Enviar'; }
-    }
-  });
-})();
-</script>
-
-</body></html>
+    })();
+  </script>
+</body>
+</html>

@@ -78,3 +78,18 @@ def stats(q: str = "", cobertura: str = "", medico: str = "", estado: str = "", 
     from collections import Counter
     by=lambda k: dict(Counter([getattr(p,k) or "" for p in rows]))
     return {"estado": by("estado"), "cobertura": by("cobertura"), "medico": by("medico")}
+@router.get("/patients/{pid}/attachments")
+def list_attachments(pid: int, db: Session = Depends(get_db)):
+  from ..models.attachment import Attachment
+  files = db.query(Attachment).where(Attachment.patient_id == pid).all()
+  out = []
+  for f in files:
+      out.append({
+          "id": f.id,
+          "name": f.filename,
+          "kind": f.kind,
+          "previewUrl": f.preview_url or f.url,
+          "downloadUrl": f.url,
+      })
+  return {"files": out}
+

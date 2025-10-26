@@ -1,29 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Importar listas desde reporte</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;background:#f3f7f5;color:#0e2720}
+    .card{max-width:720px;margin:40px auto;background:#fff;border:1px solid #e6efea;border-radius:16px;padding:20px;box-shadow:0 12px 34px rgba(6,68,39,.08)}
+    h1{font-size:28px;margin:0 0 16px}
+    .row{margin:14px 0}
+    button{background:#064427;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700;margin-right:8px;cursor:pointer}
+    a.btn{display:inline-block;text-decoration:none;background:#064427;color:#fff;border-radius:10px;padding:8px 12px}
+    .muted{color:#5c6e68}
+    #out{white-space:pre-wrap;font-family:ui-monospace,Consolas,Monaco,monospace;background:#f6faf8;border:1px dashed #cfe2da;border-radius:10px;padding:10px;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Importar listas desde reporte</h1>
+    <div class="muted">Acepta <b>CSV</b> con columnas <code>cirujano,especialidad,obra_social</code>, <b>XLS-HTML</b> o <b>XLS/XLSX</b>.</div>
 
-<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Importar listas</title>
-<style>body{font:15px system-ui;background:#f5f7f6;color:#0e2720;margin:0;display:grid;place-items:center;min-height:100vh}
-.card{width:min(660px,94vw);background:#fff;border:1px solid #e6efea;border-radius:16px;box-shadow:0 18px 50px rgba(6,68,39,.12);padding:20px}
-label{font-weight:700;display:block;margin:10px 0 6px}
-input[type=file]{width:100%;padding:10px;border:1px solid #cfe2da;border-radius:10px}
-.btn{margin-top:12px;border:0;background:#064427;color:#fff;border-radius:10px;padding:10px 12px;font-weight:700;cursor:pointer}
-.note{color:#5c6e68}
-</style>
-<div class="card">
-  <h2>Importar listas desde reporte</h2>
-  <p class="note">Acepta <b>CSV</b> con columnas <code>cirujano,especialidad,obra_social</code> o el <b>XLS-HTML</b> que exporta Excel.</p>
-  <label>Archivo</label><input id="file" type="file" />
-  <button class="btn" id="btnCsv">Importar CSV</button>
-  <button class="btn" id="btnXls">Importar XLS-HTML</button>
-  <div id="out" class="note" style="margin-top:10px"></div>
-  <div style="margin-top:10px"><a class="btn" href="/menu.html">Ir al Menú</a></div>
-</div>
-<script>
-async function send(url){
-  const f=document.getElementById('file').files[0]; if(!f){ alert('Seleccioná un archivo'); return; }
-  const fd=new FormData(); fd.append('file', f);
-  const r=await fetch(url,{method:'POST',body:fd}); const d=await r.json();
-  document.getElementById('out').textContent = JSON.stringify(d);
-}
-document.getElementById('btnCsv').onclick=()=>send('/api/ref/import/csv');
-document.getElementById('btnXls').onclick=()=>send('/api/ref/import/xls-html');
-</script>
+    <div class="row">
+      <label>Archivo</label><br>
+      <input type="file" id="file" />
+    </div>
+
+    <div class="row">
+      <button id="btnCsv">Importar CSV</button>
+      <button id="btnHtml">Importar XLS-HTML</button>
+      <button id="btnXls">Importar XLS/XLSX</button>
+      <a class="btn" href="/menu.html">Ir al Menú</a>
+    </div>
+
+    <div id="out" class="muted">{resultado acá}</div>
+  </div>
+
+  <script>
+    const $ = (q)=>document.querySelector(q);
+    async function postFile(url, file){
+      const fd = new FormData(); fd.append('file', file);
+      const r = await fetch(url, { method:'POST', body: fd });
+      return r.json();
+    }
+    $('#btnCsv').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo CSV');
+      $('#out').textContent = 'Importando CSV…';
+      const j = await postFile('/api/ref/import/csv', f);
+      $('#out').textContent = JSON.stringify(j);
+    };
+    $('#btnHtml').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo XLS-HTML');
+      $('#out').textContent = 'Importando XLS-HTML…';
+      const j = await postFile('/api/ref/import/xls-html', f);
+      $('#out').textContent = JSON.stringify(j);
+    };
+    $('#btnXls').onclick = async ()=> {
+      const f = $('#file').files[0]; if(!f) return alert('Elegí un archivo .xls/.xlsx');
+      $('#out').textContent = 'Importando XLS/XLSX…';
+      const j = await postFile('/api/ref/import/xls', f);
+      $('#out').textContent = JSON.stringify(j);
+    };
+  </script>
+</body>
+</html>
